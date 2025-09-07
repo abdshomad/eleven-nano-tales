@@ -1,9 +1,8 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Page, Story } from '../types';
 import { Button } from './ui/Button';
 import { Spinner } from './ui/Spinner';
-import { generateImage, editImage, fileToBase64 } from '../services/geminiService';
+import { generateImage, editImage, fileToBase64, generateNarration } from '../services/geminiService';
 
 interface PageEditorProps {
   story: Story;
@@ -21,6 +20,13 @@ const ImagePlaceholder = () => (
     </div>
 );
 
+const SparklesIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 11-2 0V6H3a1 1 0 110-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7l2.289 1.256a1 1 0 010 1.506L14.146 11l-1.179 4.256A1 1 0 0112 16.233V15a1 1 0 01-1-1v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1V8a1 1 0 011-1h1a1 1 0 110-2h-1V3a1 1 0 011-1z" clipRule="evenodd" />
+    </svg>
+);
+
+
 export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, onUpdatePage, onBack }) => {
   const currentPage = story.pages.find(p => p.id === pageId);
 
@@ -32,6 +38,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, onUpdateP
   const [imageMimeType, setImageMimeType] = useState(currentPage?.imageMimeType);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
   const [loadingText, setLoadingText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -114,6 +121,20 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, onUpdateP
     }
   }
 
+  const handleGenerateNarration = async () => {
+    if (!prompt || !story.concept) return;
+    setIsGeneratingNarration(true);
+    setError(null);
+    try {
+        const result = await generateNarration(story.concept, prompt);
+        setNarration(result);
+    } catch (e) {
+        setError('Sorry, we could not generate narration. Please try again.');
+    } finally {
+        setIsGeneratingNarration(false);
+    }
+  };
+
   if (!currentPage) {
     return (
         <div className="p-4">
@@ -167,7 +188,19 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, onUpdateP
         )}
 
         <div>
-          <label htmlFor="narration" className="block text-lg font-semibold text-slate-700 mb-2">Narration Text</label>
+          <div className="flex justify-between items-center mb-2">
+            <label htmlFor="narration" className="block text-lg font-semibold text-slate-700">Narration Text</label>
+            <Button 
+                onClick={handleGenerateNarration} 
+                isLoading={isGeneratingNarration} 
+                disabled={!prompt.trim() || isLoading} 
+                variant="ghost" 
+                size="sm"
+            >
+                <SparklesIcon />
+                Generate with AI
+            </Button>
+          </div>
           <textarea id="narration" rows={4} className="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500" placeholder="e.g., In a forest filled with wonder, lived a happy little fox named Foxy..." value={narration} onChange={e => setNarration(e.target.value)} />
         </div>
       </div>

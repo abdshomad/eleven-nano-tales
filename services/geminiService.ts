@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Modality } from "@google/genai";
 
 if (!process.env.API_KEY) {
@@ -80,3 +79,59 @@ export const editImage = async (
     throw new Error("Failed to edit image.");
   }
 };
+
+export const generateNarration = async (concept: string, prompt: string): Promise<string> => {
+    try {
+      const generationPrompt = `You are a storyteller for young children (ages 3-7).
+      Based on the overall story concept and a specific scene, write a short and simple narration for a single page of a storybook.
+      The narration should be 1-2 sentences long, easy for a child to understand, and magical in tone.
+
+      Story Concept: "${concept}"
+      Scene Description (Visual Prompt): "${prompt}"
+
+      Write only the narration text.`;
+  
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: generationPrompt,
+      });
+  
+      let text = response.text.trim();
+      // Clean up potential markdown or quotes from the response
+      text = text.replace(/^"|"$/g, '');
+      text = text.replace(/^\*\*Narration:\*\*\s*/i, '');
+      return text;
+    } catch (error) {
+      console.error("Error generating narration:", error);
+      throw new Error("Failed to generate narration.");
+    }
+  };
+
+  export const generateNextPrompt = async (concept: string, previousPrompt: string, previousNarration: string): Promise<string> => {
+    try {
+      const generationPrompt = `You are a creative assistant writing a children's storybook.
+      Your task is to suggest the visual prompt for the *next* scene in the story.
+      Based on the overall story concept and the details of the previous page, write a short, one-sentence visual prompt for the next page.
+      This prompt is for an illustrator, so describe the scene clearly and creatively.
+      
+      Story Concept: "${concept}"
+      
+      Previous Page Visual Prompt: "${previousPrompt}"
+      Previous Page Narration: "${previousNarration}"
+      
+      Now, write only the new visual prompt text that should logically follow.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: generationPrompt,
+      });
+
+      let text = response.text.trim();
+      text = text.replace(/^"|"$/g, '');
+      return text;
+
+    } catch(error) {
+        console.error("Error generating next prompt:", error);
+        throw new Error("Failed to generate prompt suggestion.");
+    }
+  };

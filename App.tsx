@@ -5,11 +5,14 @@ import { StorySetup } from './components/StorySetup';
 import { StoryboardEditor } from './components/StoryboardEditor';
 import { PageEditor } from './components/PageEditor';
 import { StoryReader } from './components/StoryReader';
+import { Button } from './components/ui/Button';
+import { generateNextPrompt } from './services/geminiService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.CREATION_MODE_SELECTION);
   const [story, setStory] = useState<Story | null>(null);
   const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [isAddingPage, setIsAddingPage] = useState(false);
 
   const handleSelectMode = useCallback((mode: CreationMode) => {
     setStory({
@@ -29,17 +32,31 @@ const App: React.FC = () => {
     }
   }, [story]);
   
-  const handleAddPage = useCallback(() => {
+  const handleAddPage = useCallback(async () => {
     if (story) {
+        setIsAddingPage(true);
+        let suggestedPrompt = '';
+        const lastPage = story.pages.length > 0 ? story.pages[story.pages.length - 1] : null;
+
+        if (lastPage && lastPage.prompt) {
+            try {
+                suggestedPrompt = await generateNextPrompt(story.concept, lastPage.prompt, lastPage.narration);
+            } catch (e) {
+                console.error("Failed to generate prompt suggestion:", e);
+                // Fail gracefully, user gets a blank prompt
+            }
+        }
+
         const newPage: Page = {
             id: new Date().toISOString() + Math.random(),
-            prompt: '',
+            prompt: suggestedPrompt,
             narration: '',
         };
         const updatedStory = { ...story, pages: [...story.pages, newPage] };
         setStory(updatedStory);
         setActivePageId(newPage.id);
         setCurrentView(AppView.PAGE_EDITOR);
+        setIsAddingPage(false);
     }
   }, [story]);
 
@@ -89,6 +106,7 @@ const App: React.FC = () => {
                 onEditPage={handleEditPage}
                 onPreviewStory={() => setCurrentView(AppView.STORY_READER)}
                 onBack={() => setCurrentView(AppView.STORY_SETUP)}
+                isAddingPage={isAddingPage}
             />;
         }
         return null;
@@ -114,16 +132,29 @@ const App: React.FC = () => {
         return <CreationModeSelector onSelectMode={handleSelectMode} onSelectStory={handleSelectSampleStory} />;
     }
   };
+  
+  const showHeader = currentView !== AppView.STORY_READER;
 
   return (
     <div className="w-full min-h-screen">
-        <header className="fixed top-0 left-0 p-4 z-50">
-            <button onClick={resetToHome} className="flex items-center gap-2 text-slate-700 font-bold hover:text-indigo-600 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-            Eleven Nano Tales
-            </button>
-        </header>
-        {renderContent()}
+        {showHeader && (
+            <header className="fixed top-0 left-0 right-0 p-3 z-50 bg-slate-50/80 backdrop-blur-sm border-b border-slate-200">
+                <div className="flex justify-between items-center max-w-6xl mx-auto">
+                    <button onClick={resetToHome} className="flex items-center gap-2 text-slate-700 font-bold hover:text-indigo-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                        Eleven Nano Tales
+                    </button>
+                    {currentView !== AppView.CREATION_MODE_SELECTION && (
+                         <Button onClick={resetToHome} variant="secondary" size="sm">
+                            + New Story
+                        </Button>
+                    )}
+                </div>
+            </header>
+        )}
+        <main className={showHeader ? "pt-20" : ""}>
+            {renderContent()}
+        </main>
     </div>
   );
 };

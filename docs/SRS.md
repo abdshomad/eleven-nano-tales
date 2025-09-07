@@ -70,7 +70,7 @@ The primary functions of Eleven Nano Tales include:
 
 This section details the functional requirements of Eleven Nano Tales, organized by the user journey phases.
 
-#### 3.1 User Account and Story Management
+#### 3.1 User Account and Story Management (SKIP these features for MVP)
 *   **FEAT-UAM-001: User Registration:** The system shall allow new users to register an account with an email and password or via third-party authentication (e.g., Google, Apple).
 *   **FEAT-UAM-002: User Login:** The system shall allow registered users to log in to their accounts.
 *   **FEAT-UAM-003: Password Reset:** The system shall provide a mechanism for users to reset forgotten passwords.
@@ -83,31 +83,50 @@ This section details the functional requirements of Eleven Nano Tales, organized
 #### 3.2 Phase 1: Idea & Storyboard - Creator Experience
 
 *   **FEAT-SIC-001: New Story Initiation:** The system shall provide an option to start a new story.
+    *   **Status:** Implemented (as of 2025-09-07)
 *   **FEAT-SIC-002: Story Creation Mode Selection:** Users shall be able to choose between "Quick Start" (guided) and "Blank Canvas" (freeform) modes.
+    *   **Status:** Implemented (as of 2025-09-07 17:27)
 *   **FEAT-SIC-003: Quick Start Theme Selection:** In "Quick Start" mode, users shall be able to select from predefined story themes/genres.
 *   **FEAT-SIC-004: Initial Concept Input:** Users shall be able to input a high-level text concept for their story.
+    *   **Status:** Implemented (as of 2025-09-07 17:27)
 *   **FEAT-SIC-005: Initial Style Consistency (Nano Banana):** The system shall use the initial concept to establish a consistent character design and environmental style across the story.
+    *   **Status:** Implemented (as of 2025-09-07 17:27)
 *   **FEAT-SOB-001: Storyboard View:** The system shall present a visual storyboard interface with "cards" representing individual pages.
+    *   **Status:** Implemented (as of 2025-09-07 17:27)
 *   **FEAT-SOB-002: Add Story Page:** Users shall be able to add new pages to the storyboard.
+    *   **Status:** Implemented (as of 2025-09-07 17:27)
 *   **FEAT-SOB-003: Reorder Story Pages:** Users shall be able to reorder pages within the storyboard via drag-and-drop.
 *   **FEAT-SOB-004: Delete Story Page:** Users shall be able to delete specific pages from the storyboard.
 *   **FEAT-SOB-005: Page Visual Prompt Input:** For each page, users shall be able to input a text prompt describing the desired visual content.
+    *   **Status:** Implemented (as of 2025-09-07 17:27)
 *   **FEAT-SOB-006: Page Narration Text Input:** For each page, users shall be able to input (or leave blank) text for audio narration.
+    *   **Status:** Implemented (as of 2025-09-07 17:27)
+*   **FEAT-SOB-007: AI-Powered Visual Prompt Suggester:** The system shall automatically generate a suggested visual prompt for a new page based on the story's concept and the content of the previous page.
+    *   **Status:** Implemented (as of 2025-09-07 18:15)
 
 #### 3.3 Phase 2: Generate & Iterate - Creator Experience
 
 *   **FEAT-IPG-001: Initial Image Generation (Nano Banana):** The system shall generate an image for a selected page based on its visual prompt. `
+    *   **Status:** Implemented (as of 2025-09-07 17:45)
 *   **FEAT-IPG-002: Initial Narration Generation (ElevenLabs):** The system shall generate audio narration for a selected page based on its narration text.
 *   **FEAT-VRED-001: Visual Revision Input:** Users shall be able to input natural language prompts to modify the generated image for a page. `
+    *   **Status:** Implemented (as of 2025-09-07 17:45)
 *   **FEAT-VRED-002: Image Consistency Maintenance (Nano Banana):** During image revisions, Nano Banana shall maintain character and style consistency.
+    *   **Status:** Implemented (as of 2025-09-07 17:45)
 *   **FEAT-VRED-003: Child Face Blending (Nano Banana):** Users shall be able to upload a child's photo and prompt the system to subtly blend facial features into a character's image. `
+    *   **Status:** Implemented (as of 2025-09-07 17:45)
 *   **FEAT-NRED-001: Narration Text Editing:** Users shall be able to directly edit the narration text for any page.
+    *   **Status:** Implemented (as of 2025-09-07 17:45)
 *   **FEAT-NRED-002: Voice Preset Selection (ElevenLabs):** Users shall be able to select from a list of predefined narrator voice presets.
 *   **FEAT-NRED-003: Emotional Tone Adjustment (ElevenLabs):** Users shall be able to adjust emotional sliders (e.g., happy, excited) for the narration.
 *   **FEAT-NRED-004: Narration Language Selection (ElevenLabs):** Users shall be able to select different languages for narration generation.
 *   **FEAT-NRED-005: Narration Language Translation (ElevenLabs):** Users shall be able to translate existing narration text into a selected language.
+*   **FEAT-NRED-006: AI-Powered Narration Generation (Gemini):** The system shall provide an option for users to automatically generate narration text for a page based on the story concept and the page's visual prompt.
+    *   **Status:** Implemented (as of 2025-09-07 18:00)
 *   **FEAT-CSP-001: Cross-Page Consistency (Nano Banana):** When generating new pages, the system shall maintain consistency of characters, objects, and environmental style established in previous pages.
+    *   **Status:** Implemented (as of 2025-09-07 17:45)
 *   **FEAT-CSP-002: Rapid Iteration (Fal.ai):** The system shall provide near-instantaneous regeneration of images after revision prompts. `
+    *   **Status:** Implemented (as of 2025-09-07 17:45)
 *   **FEAT-MA-001: Micro-Animation Input (Fal.ai):** Users shall be able to add simple micro-animations to specific elements within an image using natural language prompts.
 *   **FEAT-MA-002: Micro-Animation Playback:** The system shall display these micro-animations during page preview and reading.
 
@@ -170,5 +189,3 @@ This section details the functional requirements of Eleven Nano Tales, organized
 
 ---
 **END OF SRS**
-
----
