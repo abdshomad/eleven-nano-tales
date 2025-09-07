@@ -1,12 +1,14 @@
+
 import React, { useState, useCallback } from 'react';
-import { AppView, CreationMode, Story, Page } from './types';
+import { AppView, CreationMode, Story, Page, PageLayout } from './types';
 import { CreationModeSelector } from './components/CreationModeSelector';
 import { StorySetup } from './components/StorySetup';
 import { StoryboardEditor } from './components/StoryboardEditor';
 import { PageEditor } from './components/PageEditor';
 import { StoryReader } from './components/StoryReader';
 import { Button } from './components/ui/Button';
-import { generateNextPrompt, generateStoryboard } from './services/geminiService';
+import { generateNextPrompt, generateStoryboard, generateStoryboardImage, generateStoryFromImages, fileToBase64 } from './services/geminiService';
+import { ImageUploader } from './components/ImageUploader';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.CREATION_MODE_SELECTION);
@@ -14,16 +16,23 @@ const App: React.FC = () => {
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
   const [isSuggestingPrompt, setIsSuggestingPrompt] = useState(false);
+  const [isAnalyzingImages, setIsAnalyzingImages] = useState(false);
 
   const handleSelectMode = useCallback((mode: CreationMode) => {
-    setStory({
+    const baseStory = {
       id: new Date().toISOString(),
       title: 'Untitled Story',
       concept: '',
       creationMode: mode,
       pages: [],
-    });
-    setCurrentView(AppView.STORY_SETUP);
+    };
+    setStory(baseStory);
+
+    if (mode === CreationMode.FROM_IMAGES) {
+        setCurrentView(AppView.IMAGE_UPLOAD);
+    } else {
+        setCurrentView(AppView.STORY_SETUP);
+    }
   }, []);
 
   const handleConceptSubmit = useCallback((concept: string) => {
@@ -34,19 +43,67 @@ const App: React.FC = () => {
     }
   }, [story]);
 
-  const handleGenerateStoryboardOutline = useCallback(async () => {
+  const handleImagesSubmit = useCallback(async (files: File[]) => {
+    setIsAnalyzingImages(true);
+    try {
+        const imageUploads = files.map(file => fileToBase64(file));
+        const images = await Promise.all(imageUploads);
+        
+        const storyData = await generateStoryFromImages(images);
+
+        const newPages: Page[] = storyData.pages.map((p, index) => ({
+            id: new Date().toISOString() + Math.random() + index,
+            prompt: p.prompt,
+            narration: p.narration,
+            imageBase64: images[index].base64,
+            imageMimeType: images[index].mimeType,
+        }));
+
+        setStory(s => s ? { 
+            ...s, 
+            concept: storyData.concept,
+            pages: newPages,
+        } : null);
+        setCurrentView(AppView.STORYBOARD);
+
+    } catch (error) {
+        console.error("Failed to generate story from images:", error);
+        // Optional: show an error message to the user here
+        setCurrentView(AppView.IMAGE_UPLOAD); 
+    } finally {
+        setIsAnalyzingImages(false);
+    }
+  }, []);
+
+  const handleGenerateStoryboardOutline = useCallback(async (layout: PageLayout) => {
     if (story && story.concept) {
       setIsGeneratingStoryboard(true);
       try {
-        const generatedPages = await generateStoryboard(story.concept);
+        const [rows, cols] = layout.split('x').map(Number);
+        const pageCount = rows * cols;
+
+        // Use Promise.all to run both API calls concurrently for better performance
+        const [generatedPages, storyboardImage] = await Promise.all([
+          generateStoryboard(story.concept, pageCount),
+          generateStoryboardImage(story.concept, layout, pageCount)
+        ]);
+        
         const newPages: Page[] = generatedPages.map(p => ({
             id: new Date().toISOString() + Math.random(),
             prompt: p.prompt,
             narration: p.narration,
+            layout: layout,
         }));
-        setStory(s => s ? { ...s, pages: newPages } : null);
+
+        setStory(s => s ? { 
+            ...s, 
+            pages: newPages,
+            storyboardImageBase64: storyboardImage.base64,
+            storyboardImageMimeType: storyboardImage.mimeType,
+        } : null);
+
       } catch (error) {
-        console.error("Failed to generate storyboard:", error);
+        console.error("Failed to generate storyboard outline:", error);
         // Optionally, show an error message to the user here
       } finally {
         setIsGeneratingStoryboard(false);
@@ -131,6 +188,13 @@ const App: React.FC = () => {
       case AppView.CREATION_MODE_SELECTION:
         return <CreationModeSelector onSelectMode={handleSelectMode} onSelectStory={handleSelectSampleStory} onSelectPrompt={handleSelectPrompt} />;
       
+      case AppView.IMAGE_UPLOAD:
+        return <ImageUploader 
+            onUpload={handleImagesSubmit} 
+            onBack={() => setCurrentView(AppView.CREATION_MODE_SELECTION)} 
+            isAnalyzing={isAnalyzingImages}
+        />;
+
       case AppView.STORY_SETUP:
         if (story) {
             return <StorySetup 
@@ -143,12 +207,19 @@ const App: React.FC = () => {
 
       case AppView.STORYBOARD:
         if (story) {
+            const handleBackFromStoryboard = () => {
+                if (story.creationMode === CreationMode.FROM_IMAGES) {
+                    setCurrentView(AppView.IMAGE_UPLOAD);
+                } else {
+                    setCurrentView(AppView.STORY_SETUP);
+                }
+            };
             return <StoryboardEditor 
                 story={story} 
                 onAddPage={handleAddPage} 
                 onEditPage={handleEditPage}
                 onPreviewStory={() => setCurrentView(AppView.STORY_READER)}
-                onBack={() => setCurrentView(AppView.STORY_SETUP)}
+                onBack={handleBackFromStoryboard}
                 onGenerateOutline={handleGenerateStoryboardOutline}
                 isGeneratingOutline={isGeneratingStoryboard}
             />;

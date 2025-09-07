@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Page, Story } from '../types';
+import { Page, Story, PageLayout } from '../types';
 import { Button } from './ui/Button';
 import { Spinner } from './ui/Spinner';
 import { generateImage, editImage, fileToBase64, generateNarration } from '../services/geminiService';
@@ -15,11 +16,8 @@ interface PageEditorProps {
 }
 
 const ImagePlaceholder = () => (
-    <div className="w-full aspect-square bg-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-500">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        <p className="mt-2 font-semibold">Your image will appear here</p>
+    <div className="w-full aspect-square bg-slate-200 rounded-lg flex items-end justify-center p-6 text-slate-500">
+        <p className="font-semibold">Your image will appear here</p>
     </div>
 );
 
@@ -29,6 +27,7 @@ const SparklesIcon = () => (
     </svg>
 );
 
+const layouts: PageLayout[] = ['1x1', '2x2', '3x3', '3x4', '4x4'];
 
 export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex, onUpdatePage, onBack, onGeneratePrompt, isGeneratingPrompt = false }) => {
   const currentPage = story.pages.find(p => p.id === pageId);
@@ -36,6 +35,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
   const [prompt, setPrompt] = useState(currentPage?.prompt || '');
   const [narration, setNarration] = useState(currentPage?.narration || '');
   const [refinePrompt, setRefinePrompt] = useState('');
+  const [layout, setLayout] = useState<PageLayout>(currentPage?.layout || '1x1');
   
   const [imageBase64, setImageBase64] = useState(currentPage?.imageBase64);
   const [imageMimeType, setImageMimeType] = useState(currentPage?.imageMimeType);
@@ -47,21 +47,22 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
 
   const faceFileRef = useRef<HTMLInputElement>(null);
 
-  // Sync state with props when page data changes externally (e.g., AI suggestion)
+  // Sync state with props when page data changes externally
   useEffect(() => {
     if (currentPage) {
         setPrompt(currentPage.prompt);
         setNarration(currentPage.narration);
         setImageBase64(currentPage.imageBase64);
         setImageMimeType(currentPage.imageMimeType);
+        setLayout(currentPage.layout || '1x1');
     }
   }, [currentPage]);
 
   const handleUpdatePage = useCallback(() => {
     if (currentPage) {
-        onUpdatePage({ ...currentPage, prompt, narration, imageBase64, imageMimeType });
+        onUpdatePage({ ...currentPage, prompt, narration, imageBase64, imageMimeType, layout });
     }
-  }, [currentPage, onUpdatePage, prompt, narration, imageBase64, imageMimeType]);
+  }, [currentPage, onUpdatePage, prompt, narration, imageBase64, imageMimeType, layout]);
 
   // Debounced save for text inputs
   useEffect(() => {
@@ -80,12 +81,11 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
     setLoadingText('Generating your illustration...');
     setError(null);
     try {
-      const fullPrompt = `Children's story book illustration, whimsical and magical style. ${prompt}. Based on the story concept: "${story.concept}"`;
-      const result = await generateImage(fullPrompt);
+      const result = await generateImage(prompt, story.concept, layout);
       setImageBase64(result.base64);
       setImageMimeType(result.mimeType);
       if (currentPage) {
-        onUpdatePage({ ...currentPage, prompt, narration, imageBase64: result.base64, imageMimeType: result.mimeType });
+        onUpdatePage({ ...currentPage, prompt, narration, layout, imageBase64: result.base64, imageMimeType: result.mimeType });
       }
     } catch (e) {
       setError('Sorry, something went wrong while generating the image.');
@@ -104,7 +104,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
         setImageBase64(result.base64);
         setImageMimeType(result.mimeType);
         if (currentPage) {
-            onUpdatePage({ ...currentPage, prompt, narration, imageBase64: result.base64, imageMimeType: result.mimeType });
+            onUpdatePage({ ...currentPage, prompt, narration, layout, imageBase64: result.base64, imageMimeType: result.mimeType });
         }
         setRefinePrompt('');
     } catch(e) {
@@ -127,7 +127,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
         setImageBase64(result.base64);
         setImageMimeType(result.mimeType);
         if (currentPage) {
-            onUpdatePage({ ...currentPage, prompt, narration, imageBase64: result.base64, imageMimeType: result.mimeType });
+            onUpdatePage({ ...currentPage, prompt, narration, layout, imageBase64: result.base64, imageMimeType: result.mimeType });
         }
     } catch(e) {
         setError('Could not blend the face. Please try a different photo.');
@@ -151,6 +151,13 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
     }
   };
 
+  const handleLayoutChange = (newLayout: PageLayout) => {
+    setLayout(newLayout);
+    if (currentPage) {
+        onUpdatePage({ ...currentPage, prompt, narration, imageBase64, imageMimeType, layout: newLayout });
+    }
+  };
+
   if (!currentPage) {
     return (
         <div className="p-4">
@@ -166,13 +173,30 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
         <div className="relative w-full aspect-square">
             {imageBase64 ? <img src={`data:${imageMimeType};base64,${imageBase64}`} alt={prompt} className="w-full h-full object-cover rounded-lg shadow-lg" /> : <ImagePlaceholder />}
             {isLoading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"><Spinner text={loadingText} /></div>}
+            <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-4 rounded-b-lg">
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="narration" className="block text-lg font-semibold text-white">Narration Text</label>
+                <Button 
+                    onClick={handleGenerateNarration} 
+                    isLoading={isGeneratingNarration} 
+                    disabled={!prompt.trim() || isLoading} 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-white hover:bg-white/20"
+                >
+                    <SparklesIcon />
+                    Generate with AI
+                </Button>
+              </div>
+              <textarea id="narration" rows={3} className="w-full p-2 border border-slate-500 rounded-lg bg-transparent text-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400" placeholder="e.g., In a forest filled with wonder, lived a happy little fox named Foxy..." value={narration} onChange={e => setNarration(e.target.value)} />
+            </div>
         </div>
         {error && <p className="text-red-600 mt-4 bg-red-100 p-3 rounded-md">{error}</p>}
       </div>
 
       <div className="flex flex-col space-y-6">
         <div>
-            <button onClick={onBack} className="text-sm text-indigo-600 hover:underline mb-2">&larr; Back to Storyboard</button>
+            <button onClick={onBack} className="text-sm text-indigo-600 hover:underline mb-4">&larr; Back</button>
             <h1 className="text-3xl font-bold text-slate-800">Page {pageIndex + 1} Editor</h1>
         </div>
 
@@ -191,8 +215,23 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
                     Suggest with AI
                 </Button>
             </div>
-          <textarea id="visual-prompt" rows={3} className="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Foxy sniffing flowers in a mossy forest clearing." value={prompt} onChange={e => setPrompt(e.target.value)} />
-          <Button onClick={handleGenerate} isLoading={isLoading} disabled={!prompt.trim()} className="mt-2 w-full sm:w-auto">
+            <textarea id="visual-prompt" rows={3} className="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Foxy sniffing flowers in a mossy forest clearing." value={prompt} onChange={e => setPrompt(e.target.value)} />
+            <div className="mt-4">
+                <label className="block text-sm font-semibold text-slate-600 mb-2">Image Layout</label>
+                <div className="flex flex-wrap gap-2">
+                    {layouts.map(l => (
+                        <Button
+                            key={l}
+                            variant={layout === l ? 'primary' : 'secondary'}
+                            size="sm"
+                            onClick={() => handleLayoutChange(l)}
+                        >
+                            {l}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+          <Button onClick={handleGenerate} isLoading={isLoading} disabled={!prompt.trim()} className="mt-4 w-full sm:w-auto">
             {imageBase64 ? 'Re-generate Image' : 'Generate Image'}
           </Button>
         </div>
@@ -213,23 +252,6 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex
             </div>
           </div>
         )}
-
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label htmlFor="narration" className="block text-lg font-semibold text-slate-700">Narration Text</label>
-            <Button 
-                onClick={handleGenerateNarration} 
-                isLoading={isGeneratingNarration} 
-                disabled={!prompt.trim() || isLoading} 
-                variant="ghost" 
-                size="sm"
-            >
-                <SparklesIcon />
-                Generate with AI
-            </Button>
-          </div>
-          <textarea id="narration" rows={4} className="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500" placeholder="e.g., In a forest filled with wonder, lived a happy little fox named Foxy..." value={narration} onChange={e => setNarration(e.target.value)} />
-        </div>
       </div>
     </div>
   );

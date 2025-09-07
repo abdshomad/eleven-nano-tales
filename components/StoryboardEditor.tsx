@@ -1,5 +1,6 @@
-import React from 'react';
-import { Page, Story } from '../types';
+
+import React, { useState } from 'react';
+import { Page, Story, PageLayout } from '../types';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 
@@ -9,7 +10,7 @@ interface StoryboardEditorProps {
   onEditPage: (pageId: string) => void;
   onPreviewStory: () => void;
   onBack: () => void;
-  onGenerateOutline: () => void;
+  onGenerateOutline: (layout: PageLayout) => void;
   isGeneratingOutline?: boolean;
 }
 
@@ -32,13 +33,17 @@ const SparklesIcon = () => (
     </svg>
 );
 
+const layouts: PageLayout[] = ['1x1', '2x2', '3x3', '4x4', '3x4', '4x3'];
+
 export const StoryboardEditor: React.FC<StoryboardEditorProps> = ({ story, onAddPage, onEditPage, onPreviewStory, onBack, onGenerateOutline, isGeneratingOutline = false }) => {
+  const [outlineLayout, setOutlineLayout] = useState<PageLayout>('2x2');
+  
   return (
     <div className="min-h-screen p-4 sm:p-8 bg-slate-100">
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
             <div>
-                <button onClick={onBack} className="text-sm text-indigo-600 hover:underline mb-2">&larr; Back to Concept</button>
+                <button onClick={onBack} className="text-sm text-indigo-600 hover:underline mb-4">&larr; Back</button>
                 <h1 className="text-3xl sm:text-4xl font-bold text-slate-800">Storyboard</h1>
                 <p className="text-slate-600 mt-1 max-w-2xl italic">"{story.concept}"</p>
             </div>
@@ -49,11 +54,37 @@ export const StoryboardEditor: React.FC<StoryboardEditorProps> = ({ story, onAdd
           </div>
         </div>
 
+        {story.storyboardImageBase64 && (
+          <Card className="mb-8 p-4">
+            <h2 className="text-xl font-bold text-slate-800 mb-4 text-center">Visual Storyboard Outline</h2>
+            <img 
+              src={`data:${story.storyboardImageMimeType};base64,${story.storyboardImageBase64}`} 
+              alt="A grid of images outlining the story." 
+              className="rounded-lg shadow-md w-full"
+            />
+          </Card>
+        )}
+
         {story.pages.length === 0 && (
             <Card className="text-center py-10 mb-6">
                 <h2 className="text-2xl font-bold text-slate-700">Your story begins here!</h2>
-                <p className="text-slate-500 mt-2 mb-6">Add your first page manually, or let AI create an outline for you.</p>
-                <Button onClick={onGenerateOutline} isLoading={isGeneratingOutline}>
+                <p className="text-slate-500 mt-2 mb-4">Add your first page manually, or let AI create an outline for you.</p>
+                <div className="mb-6">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Outline Grid &amp; Page Count</label>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                        {layouts.map(l => (
+                            <Button
+                                key={l}
+                                variant={outlineLayout === l ? 'primary' : 'secondary'}
+                                size="sm"
+                                onClick={() => setOutlineLayout(l)}
+                            >
+                                {l}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+                <Button onClick={() => onGenerateOutline(outlineLayout)} isLoading={isGeneratingOutline}>
                     <SparklesIcon /> Generate Outline with AI
                 </Button>
             </Card>

@@ -84,7 +84,7 @@ This section details the functional requirements of Eleven Nano Tales, organized
 
 *   **FEAT-SIC-001: New Story Initiation:** The system shall provide an option to start a new story.
     *   **Status:** Implemented (as of 2025-09-07)
-*   **FEAT-SIC-002: Story Creation Mode Selection:** Users shall be able to choose between "Quick Start" (guided) and "Blank Canvas" (freeform) modes.
+*   **FEAT-SIC-002: Story Creation Mode Selection:** Users shall be able to choose between different creation modes, such as starting from a concept or uploading their own images.
     *   **Status:** Implemented (as of 2025-09-07 17:27)
 *   **FEAT-SIC-003: Quick Start Theme Selection:** In "Quick Start" mode, users shall be able to select from predefined story themes/genres.
 *   **FEAT-SIC-004: Initial Concept Input:** Users shall be able to input a high-level text concept for their story.

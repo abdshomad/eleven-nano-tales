@@ -39,11 +39,8 @@ The user journey is divided into four main phases: Idea & Storyboard, Generate &
 **Features:**
 
 *   **Story Creation Mode Selection:**
-    *   **Quick Start (Guided):**
-        *   User selects a theme/genre (e.g., "Fantasy Adventure," "Learning Numbers," "Everyday Hero").
-        *   System provides simple story prompt templates or initial character/setting suggestions.
-    *   **Blank Canvas (Freeform):**
-        *   User starts with an empty editor.
+    *   **Start from a Concept:** The user provides a text prompt (a theme or idea) to generate a story outline.
+    *   **Start with Images:** The user uploads a series of images, and the AI generates a story based on them.
 *   **Initial Story Concept Input:**
     *   **Description:** Text input field for users to type a high-level story concept.
     *   **Purpose:** Acts as the seed for initial character designs and environmental styles, establishing consistency via Nano Banana.

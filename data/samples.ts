@@ -34,7 +34,7 @@ export const sampleStories: Story[] = [
     id: 'sample-stella',
     title: 'Stella the Stargazer',
     concept: 'A young girl named Stella who builds a rocket ship out of cardboard to visit the stars.',
-    creationMode: CreationMode.BLANK_CANVAS,
+    creationMode: CreationMode.QUICK_START,
     pages: [
         {
             id: 'stella-1',

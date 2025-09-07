@@ -10,7 +10,6 @@ interface StorySetupProps {
 
 const prompts = {
     [CreationMode.QUICK_START]: "e.g., A brave little fox named Foxy who explores a magical forest.",
-    [CreationMode.BLANK_CANVAS]: "e.g., Elara, a young elven warrior, quests through the Whispering Woods to find the lost Orb of Lumina..."
 }
 
 export const StorySetup: React.FC<StorySetupProps> = ({ creationMode, onConceptSubmit, onBack }) => {
@@ -24,8 +23,9 @@ export const StorySetup: React.FC<StorySetupProps> = ({ creationMode, onConceptS
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+    <div className="flex flex-col items-center p-4 sm:p-8">
       <div className="w-full max-w-2xl">
+        <button onClick={onBack} className="text-sm text-indigo-600 hover:underline mb-4">&larr; Back</button>
         <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-slate-800">What's Your Story Idea?</h1>
             <p className="text-slate-600 mt-2 text-lg">Describe the main idea in a sentence or two. This will set the stage for your tale!</p>
@@ -38,8 +38,7 @@ export const StorySetup: React.FC<StorySetupProps> = ({ creationMode, onConceptS
             className="w-full h-40 p-4 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
             autoFocus
             />
-            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-between">
-                <Button type="button" variant="secondary" onClick={onBack}>Back</Button>
+            <div className="mt-6 flex justify-end">
                 <Button type="submit" disabled={!concept.trim()}>
                     Start Storyboarding
                 </Button>
