@@ -6,13 +6,14 @@ import { StoryboardEditor } from './components/StoryboardEditor';
 import { PageEditor } from './components/PageEditor';
 import { StoryReader } from './components/StoryReader';
 import { Button } from './components/ui/Button';
-import { generateNextPrompt } from './services/geminiService';
+import { generateNextPrompt, generateStoryboard } from './services/geminiService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.CREATION_MODE_SELECTION);
   const [story, setStory] = useState<Story | null>(null);
   const [activePageId, setActivePageId] = useState<string | null>(null);
-  const [isAddingPage, setIsAddingPage] = useState(false);
+  const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
+  const [isSuggestingPrompt, setIsSuggestingPrompt] = useState(false);
 
   const handleSelectMode = useCallback((mode: CreationMode) => {
     setStory({
@@ -27,38 +28,68 @@ const App: React.FC = () => {
 
   const handleConceptSubmit = useCallback((concept: string) => {
     if (story) {
-      setStory({ ...story, concept });
+      // Go to an empty storyboard, generation is now a separate step
+      setStory({ ...story, concept, pages: [] });
       setCurrentView(AppView.STORYBOARD);
     }
   }, [story]);
+
+  const handleGenerateStoryboardOutline = useCallback(async () => {
+    if (story && story.concept) {
+      setIsGeneratingStoryboard(true);
+      try {
+        const generatedPages = await generateStoryboard(story.concept);
+        const newPages: Page[] = generatedPages.map(p => ({
+            id: new Date().toISOString() + Math.random(),
+            prompt: p.prompt,
+            narration: p.narration,
+        }));
+        setStory(s => s ? { ...s, pages: newPages } : null);
+      } catch (error) {
+        console.error("Failed to generate storyboard:", error);
+        // Optionally, show an error message to the user here
+      } finally {
+        setIsGeneratingStoryboard(false);
+      }
+    }
+  }, [story]);
   
-  const handleAddPage = useCallback(async () => {
+  const handleAddPage = useCallback(() => {
     if (story) {
-        setIsAddingPage(true);
-        let suggestedPrompt = '';
-        const lastPage = story.pages.length > 0 ? story.pages[story.pages.length - 1] : null;
-
-        if (lastPage && lastPage.prompt) {
-            try {
-                suggestedPrompt = await generateNextPrompt(story.concept, lastPage.prompt, lastPage.narration);
-            } catch (e) {
-                console.error("Failed to generate prompt suggestion:", e);
-                // Fail gracefully, user gets a blank prompt
-            }
-        }
-
+        // Create a blank page without AI suggestion
         const newPage: Page = {
             id: new Date().toISOString() + Math.random(),
-            prompt: suggestedPrompt,
+            prompt: '',
             narration: '',
         };
         const updatedStory = { ...story, pages: [...story.pages, newPage] };
         setStory(updatedStory);
         setActivePageId(newPage.id);
         setCurrentView(AppView.PAGE_EDITOR);
-        setIsAddingPage(false);
     }
   }, [story]);
+
+  const handleGenerateNextPrompt = useCallback(async () => {
+    if (story && activePageId) {
+        const pageIndex = story.pages.findIndex(p => p.id === activePageId);
+        if (pageIndex <= 0) return; // Cannot suggest for the first page
+
+        const lastPage = story.pages[pageIndex - 1];
+        
+        setIsSuggestingPrompt(true);
+        try {
+            const suggestedPrompt = await generateNextPrompt(story.concept, lastPage.prompt, lastPage.narration);
+            const updatedPages = story.pages.map(p => 
+                p.id === activePageId ? { ...p, prompt: suggestedPrompt } : p
+            );
+            setStory(s => s ? { ...s, pages: updatedPages } : null);
+        } catch (e) {
+            console.error("Failed to generate prompt suggestion:", e);
+        } finally {
+            setIsSuggestingPrompt(false);
+        }
+    }
+  }, [story, activePageId]);
 
   const handleEditPage = useCallback((pageId: string) => {
     setActivePageId(pageId);
@@ -74,7 +105,19 @@ const App: React.FC = () => {
 
   const handleSelectSampleStory = useCallback((selectedStory: Story) => {
     setStory(selectedStory);
-    setCurrentView(AppView.STORY_READER);
+    setCurrentView(AppView.STORYBOARD);
+  }, []);
+
+  const handleSelectPrompt = useCallback((prompt: string) => {
+    const newStory: Story = {
+      id: new Date().toISOString(),
+      title: 'Untitled Story',
+      concept: prompt,
+      creationMode: CreationMode.QUICK_START,
+      pages: [],
+    };
+    setStory(newStory);
+    setCurrentView(AppView.STORYBOARD);
   }, []);
 
   const resetToHome = () => {
@@ -86,7 +129,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case AppView.CREATION_MODE_SELECTION:
-        return <CreationModeSelector onSelectMode={handleSelectMode} onSelectStory={handleSelectSampleStory} />;
+        return <CreationModeSelector onSelectMode={handleSelectMode} onSelectStory={handleSelectSampleStory} onSelectPrompt={handleSelectPrompt} />;
       
       case AppView.STORY_SETUP:
         if (story) {
@@ -106,18 +149,23 @@ const App: React.FC = () => {
                 onEditPage={handleEditPage}
                 onPreviewStory={() => setCurrentView(AppView.STORY_READER)}
                 onBack={() => setCurrentView(AppView.STORY_SETUP)}
-                isAddingPage={isAddingPage}
+                onGenerateOutline={handleGenerateStoryboardOutline}
+                isGeneratingOutline={isGeneratingStoryboard}
             />;
         }
         return null;
         
       case AppView.PAGE_EDITOR:
         if (story && activePageId) {
+            const pageIndex = story.pages.findIndex(p => p.id === activePageId);
             return <PageEditor 
                 story={story}
                 pageId={activePageId}
+                pageIndex={pageIndex}
                 onUpdatePage={handleUpdatePage}
                 onBack={() => setCurrentView(AppView.STORYBOARD)}
+                onGeneratePrompt={handleGenerateNextPrompt}
+                isGeneratingPrompt={isSuggestingPrompt}
             />;
         }
         return null;
@@ -129,7 +177,7 @@ const App: React.FC = () => {
         return null;
 
       default:
-        return <CreationModeSelector onSelectMode={handleSelectMode} onSelectStory={handleSelectSampleStory} />;
+        return <CreationModeSelector onSelectMode={handleSelectMode} onSelectStory={handleSelectSampleStory} onSelectPrompt={handleSelectPrompt} />;
     }
   };
   

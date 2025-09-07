@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CreationMode } from '../types';
 import { Button } from './ui/Button';
@@ -41,7 +40,9 @@ export const StorySetup: React.FC<StorySetupProps> = ({ creationMode, onConceptS
             />
             <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-between">
                 <Button type="button" variant="secondary" onClick={onBack}>Back</Button>
-                <Button type="submit" disabled={!concept.trim()}>Start Storyboarding</Button>
+                <Button type="submit" disabled={!concept.trim()}>
+                    Start Storyboarding
+                </Button>
             </div>
         </form>
       </div>

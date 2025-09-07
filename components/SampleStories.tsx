@@ -30,7 +30,7 @@ export const SampleStories: React.FC<SampleStoriesProps> = ({ stories, onSelectS
             <div className="p-6 flex-grow flex flex-col">
               <h3 className="text-xl font-bold text-slate-800">{story.title}</h3>
               <p className="text-slate-600 mt-2 flex-grow">{story.concept}</p>
-              <div className="text-right mt-4 text-indigo-600 font-semibold text-sm">Read Story &rarr;</div>
+              <div className="text-right mt-4 text-indigo-600 font-semibold text-sm">Explore Outline &rarr;</div>
             </div>
           </Card>
         ))}

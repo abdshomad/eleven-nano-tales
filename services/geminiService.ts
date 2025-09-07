@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable is not set");
@@ -133,5 +133,56 @@ export const generateNarration = async (concept: string, prompt: string): Promis
     } catch(error) {
         console.error("Error generating next prompt:", error);
         throw new Error("Failed to generate prompt suggestion.");
+    }
+  };
+
+  export const generateStoryboard = async (concept: string): Promise<Array<{ prompt: string; narration: string }>> => {
+    try {
+      const generationPrompt = `You are a creative author for children's storybooks (ages 3-7).
+      Based on the following story concept, create a short story outline with 4 to 5 pages.
+      For each page, provide a "prompt" which is a visual description for an illustrator, and a "narration" which is the text to be read aloud.
+      The narration should be simple, 1-2 sentences long.
+      The visual prompt should be descriptive and whimsical.
+  
+      Story Concept: "${concept}"
+  
+      Return the result as a JSON array.`;
+  
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: generationPrompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                prompt: {
+                  type: Type.STRING,
+                  description: 'A visual description of the scene for an illustrator.',
+                },
+                narration: {
+                  type: Type.STRING,
+                  description: 'The short narration text for the page, to be read aloud.',
+                },
+              },
+              required: ["prompt", "narration"],
+            },
+          },
+        },
+      });
+  
+      const jsonStr = response.text.trim();
+      const pages = JSON.parse(jsonStr);
+      
+      if (!Array.isArray(pages) || pages.some(p => typeof p.prompt !== 'string' || typeof p.narration !== 'string')) {
+          throw new Error("Invalid storyboard format received from AI.");
+      }
+  
+      return pages;
+    } catch (error) {
+      console.error("Error generating storyboard:", error);
+      throw new Error("Failed to generate the story outline.");
     }
   };

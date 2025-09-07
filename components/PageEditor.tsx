@@ -7,8 +7,11 @@ import { generateImage, editImage, fileToBase64, generateNarration } from '../se
 interface PageEditorProps {
   story: Story;
   pageId: string;
+  pageIndex: number;
   onUpdatePage: (page: Page) => void;
   onBack: () => void;
+  onGeneratePrompt: () => void;
+  isGeneratingPrompt?: boolean;
 }
 
 const ImagePlaceholder = () => (
@@ -27,7 +30,7 @@ const SparklesIcon = () => (
 );
 
 
-export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, onUpdatePage, onBack }) => {
+export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, pageIndex, onUpdatePage, onBack, onGeneratePrompt, isGeneratingPrompt = false }) => {
   const currentPage = story.pages.find(p => p.id === pageId);
 
   const [prompt, setPrompt] = useState(currentPage?.prompt || '');
@@ -44,18 +47,31 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, onUpdateP
 
   const faceFileRef = useRef<HTMLInputElement>(null);
 
+  // Sync state with props when page data changes externally (e.g., AI suggestion)
+  useEffect(() => {
+    if (currentPage) {
+        setPrompt(currentPage.prompt);
+        setNarration(currentPage.narration);
+        setImageBase64(currentPage.imageBase64);
+        setImageMimeType(currentPage.imageMimeType);
+    }
+  }, [currentPage]);
+
   const handleUpdatePage = useCallback(() => {
     if (currentPage) {
         onUpdatePage({ ...currentPage, prompt, narration, imageBase64, imageMimeType });
     }
   }, [currentPage, onUpdatePage, prompt, narration, imageBase64, imageMimeType]);
 
+  // Debounced save for text inputs
   useEffect(() => {
     const timer = setTimeout(() => {
-        handleUpdatePage();
-    }, 1000); // Debounce saving
+        if (currentPage && (prompt !== currentPage.prompt || narration !== currentPage.narration)) {
+            handleUpdatePage();
+        }
+    }, 1000);
     return () => clearTimeout(timer);
-  }, [prompt, narration, handleUpdatePage]);
+  }, [prompt, narration, currentPage, handleUpdatePage]);
 
 
   const handleGenerate = async () => {
@@ -144,8 +160,6 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, onUpdateP
     );
   }
 
-  const pageIndex = story.pages.findIndex(p => p.id === pageId);
-
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
       <div className="flex flex-col">
@@ -163,7 +177,20 @@ export const PageEditor: React.FC<PageEditorProps> = ({ story, pageId, onUpdateP
         </div>
 
         <div>
-          <label htmlFor="visual-prompt" className="block text-lg font-semibold text-slate-700 mb-2">Visual Prompt</label>
+            <div className="flex justify-between items-center mb-2">
+                <label htmlFor="visual-prompt" className="block text-lg font-semibold text-slate-700">Visual Prompt</label>
+                <Button 
+                    onClick={onGeneratePrompt} 
+                    isLoading={isGeneratingPrompt} 
+                    disabled={isLoading || pageIndex === 0} 
+                    variant="ghost" 
+                    size="sm"
+                    title={pageIndex === 0 ? "Write the first prompt to get suggestions for the next pages" : "Suggest prompt with AI"}
+                >
+                    <SparklesIcon />
+                    Suggest with AI
+                </Button>
+            </div>
           <textarea id="visual-prompt" rows={3} className="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Foxy sniffing flowers in a mossy forest clearing." value={prompt} onChange={e => setPrompt(e.target.value)} />
           <Button onClick={handleGenerate} isLoading={isLoading} disabled={!prompt.trim()} className="mt-2 w-full sm:w-auto">
             {imageBase64 ? 'Re-generate Image' : 'Generate Image'}

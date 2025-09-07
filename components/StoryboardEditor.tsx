@@ -9,7 +9,8 @@ interface StoryboardEditorProps {
   onEditPage: (pageId: string) => void;
   onPreviewStory: () => void;
   onBack: () => void;
-  isAddingPage?: boolean;
+  onGenerateOutline: () => void;
+  isGeneratingOutline?: boolean;
 }
 
 const PlusIcon = () => (
@@ -25,7 +26,13 @@ const EyeIcon = () => (
     </svg>
 );
 
-export const StoryboardEditor: React.FC<StoryboardEditorProps> = ({ story, onAddPage, onEditPage, onPreviewStory, onBack, isAddingPage = false }) => {
+const SparklesIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 11-2 0V6H3a1 1 0 110-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7l2.289 1.256a1 1 0 010 1.506L14.146 11l-1.179 4.256A1 1 0 0112 16.233V15a1 1 0 01-1-1v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1V8a1 1 0 011-1h1a1 1 0 110-2h-1V3a1 1 0 011-1z" clipRule="evenodd" />
+    </svg>
+);
+
+export const StoryboardEditor: React.FC<StoryboardEditorProps> = ({ story, onAddPage, onEditPage, onPreviewStory, onBack, onGenerateOutline, isGeneratingOutline = false }) => {
   return (
     <div className="min-h-screen p-4 sm:p-8 bg-slate-100">
       <div className="max-w-5xl mx-auto">
@@ -41,6 +48,16 @@ export const StoryboardEditor: React.FC<StoryboardEditorProps> = ({ story, onAdd
             </Button>
           </div>
         </div>
+
+        {story.pages.length === 0 && (
+            <Card className="text-center py-10 mb-6">
+                <h2 className="text-2xl font-bold text-slate-700">Your story begins here!</h2>
+                <p className="text-slate-500 mt-2 mb-6">Add your first page manually, or let AI create an outline for you.</p>
+                <Button onClick={onGenerateOutline} isLoading={isGeneratingOutline}>
+                    <SparklesIcon /> Generate Outline with AI
+                </Button>
+            </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {story.pages.map((page, index) => (
@@ -58,23 +75,10 @@ export const StoryboardEditor: React.FC<StoryboardEditorProps> = ({ story, onAdd
           ))}
           <button 
             onClick={onAddPage} 
-            disabled={isAddingPage}
-            className="border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-500 hover:border-indigo-500 hover:text-indigo-600 transition-colors p-6 min-h-[180px] disabled:cursor-not-allowed disabled:hover:border-slate-300 disabled:hover:text-slate-500"
+            className="border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-500 hover:border-indigo-500 hover:text-indigo-600 transition-colors p-6 min-h-[180px]"
           >
-            {isAddingPage ? (
-                <>
-                    <svg className="animate-spin h-6 w-6 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span className="mt-2 font-semibold">AI is thinking...</span>
-                </>
-            ) : (
-                <>
-                    <PlusIcon />
-                    <span className="mt-2 font-semibold">Add New Page</span>
-                </>
-            )}
+            <PlusIcon />
+            <span className="mt-2 font-semibold">Add New Page</span>
           </button>
         </div>
       </div>

@@ -3,11 +3,13 @@ import { CreationMode, Story } from '../types';
 import { Card } from './ui/Card';
 import { SampleStories } from './SampleStories';
 import { sampleStories } from '../data/samples';
+import { Button } from './ui/Button';
 
 
 interface CreationModeSelectorProps {
   onSelectMode: (mode: CreationMode) => void;
   onSelectStory: (story: Story) => void;
+  onSelectPrompt: (prompt: string) => void;
 }
 
 const BookIcon = () => (
@@ -22,7 +24,14 @@ const SparklesIcon = () => (
     </svg>
 );
 
-export const CreationModeSelector: React.FC<CreationModeSelectorProps> = ({ onSelectMode, onSelectStory }) => {
+const samplePrompts = [
+    "A curious squirrel who finds a city in an oak tree...",
+    "A little girl who befriends a gentle dragon...",
+    "Two robot friends on a quest for the Golden Bolt...",
+    "A magical paintbrush that brings drawings to life...",
+];
+
+export const CreationModeSelector: React.FC<CreationModeSelectorProps> = ({ onSelectMode, onSelectStory, onSelectPrompt }) => {
   return (
     <div className="flex flex-col items-center min-h-screen px-4 sm:px-6 py-24 sm:py-32">
       <div className="text-center mb-10">
@@ -41,6 +50,24 @@ export const CreationModeSelector: React.FC<CreationModeSelectorProps> = ({ onSe
             <p className="text-slate-600 mt-2">For seasoned storytellers. You have complete control from the very first word. Let your imagination run wild!</p>
         </Card>
       </div>
+      
+      <div className="mt-12 w-full max-w-2xl text-center">
+          <p className="text-slate-500 mb-4">Or try one of these ideas:</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {samplePrompts.map((prompt, index) => (
+              <Button 
+                key={index} 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => onSelectPrompt(prompt)}
+                className="text-left font-normal"
+              >
+                {prompt}
+              </Button>
+            ))}
+          </div>
+        </div>
+
       <SampleStories stories={sampleStories} onSelectStory={onSelectStory} />
     </div>
   );

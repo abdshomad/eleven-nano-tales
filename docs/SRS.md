@@ -103,6 +103,8 @@ This section details the functional requirements of Eleven Nano Tales, organized
     *   **Status:** Implemented (as of 2025-09-07 17:27)
 *   **FEAT-SOB-007: AI-Powered Visual Prompt Suggester:** The system shall automatically generate a suggested visual prompt for a new page based on the story's concept and the content of the previous page.
     *   **Status:** Implemented (as of 2025-09-07 18:15)
+*   **FEAT-SOB-008: AI-Powered Storyboard Generation:** Upon submitting a story concept, the system shall automatically generate an initial multi-page storyboard outline, including visual prompts and narration for each page.
+    *   **Status:** Implemented (as of 2025-09-07 18:45)
 
 #### 3.3 Phase 2: Generate & Iterate - Creator Experience
 
