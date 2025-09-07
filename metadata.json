@@ -1,0 +1,5 @@
+{
+  "name": "Eleven Nano Tales",
+  "description": "An application to dynamically generate, personalize, and interactively evolve children's stories and illustrations using the Gemini API. Empowering parents, educators, and storytellers to create magical tales for children.",
+  "requestFramePermissions": []
+}
